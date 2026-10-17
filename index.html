@@ -1,0 +1,439 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#1c1b17" />
+<title>Honorarios</title>
+<style>
+  :root {
+    --ink: #1c1b17;
+    --paper: #f4f0e6;
+    --board: #e3dccc;
+    --brick: #8e3428;
+    --muted: #6d675c;
+    --line: rgba(28, 27, 23, 0.15);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    font-family: "Segoe UI", system-ui, sans-serif;
+    background: var(--board);
+    color: var(--ink);
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  button, input, select { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  .top {
+    display: flex; align-items: center; gap: 10px;
+    height: 56px; padding: 0 12px; background: var(--ink); color: var(--paper); flex: none;
+  }
+  .top h1 { margin: 0; font-family: Georgia, "Times New Roman", serif; font-size: 22px; font-weight: 500; line-height: 1; }
+  .top small { display: block; letter-spacing: 0.14em; text-transform: uppercase; font-size: 10px; opacity: 0.7; margin-top: 3px; }
+  .iconbtn {
+    width: 44px; height: 44px; border: 0; background: transparent; color: inherit; font-size: 18px;
+  }
+  .grow { margin-left: auto; }
+  .aviso { background: #f3ddd9; color: var(--brick); padding: 10px 14px; font-size: 14px; }
+  .resumen {
+    display: flex; justify-content: space-between; align-items: baseline;
+    padding: 10px 16px; background: var(--paper); border-bottom: 1px solid var(--line);
+  }
+  .resumen b { font-family: Georgia, serif; font-size: 26px; font-weight: 500; }
+  .kicker { letter-spacing: 0.14em; text-transform: uppercase; font-size: 11px; color: var(--muted); }
+  .tabs { display: flex; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--line); }
+  .tabs button, .primary, .ghost, .danger {
+    height: 44px; border: 1px solid var(--line); background: transparent; padding: 0 14px;
+  }
+  .tabs button[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .primary { background: var(--brick); color: var(--paper); border-color: var(--brick); width: 100%; }
+  .danger { background: transparent; color: var(--brick); border-color: var(--brick); }
+  .main { flex: 1; min-height: 0; overflow: auto; }
+  .pad { padding: 12px; }
+  .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+  .field span { font-size: 13px; color: var(--muted); }
+  input, select {
+    height: 48px; width: 100%; border: 1px solid rgba(28,27,23,.25); background: var(--paper); padding: 0 12px; font-size: 16px;
+  }
+  input:focus, select:focus { outline: 2px solid var(--brick); border-color: var(--brick); }
+  .card {
+    width: 100%; text-align: left; border: 0; border-bottom: 1px solid var(--line);
+    background: transparent; padding: 14px 12px; display: flex; gap: 12px; align-items: flex-start;
+  }
+  .card strong, .card em { display: block; font-style: normal; }
+  .card em { color: var(--muted); font-size: 14px; margin-top: 2px; }
+  .money { font-family: Georgia, serif; font-size: 20px; white-space: nowrap; }
+  .money.debe { color: var(--brick); }
+  .row { display: flex; justify-content: space-between; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+  .sheet {
+    position: fixed; inset: 0; background: rgba(28,27,23,.45); display: flex; align-items: flex-end; z-index: 5;
+  }
+  .sheet form, .sheet .panel {
+    background: var(--paper); width: 100%; max-height: 92dvh; overflow: auto; padding: 16px 16px 24px;
+  }
+  .sheet h2 { font-family: Georgia, serif; font-weight: 500; margin: 0 0 14px; }
+  .actions { display: flex; gap: 8px; }
+  .actions > * { flex: 1; }
+  .empty { padding: 28px 20px; }
+  .empty h2 { font-family: Georgia, serif; font-weight: 500; font-size: 32px; margin: 0 0 8px; }
+  .bar { height: 6px; background: var(--board); margin: 8px 0 14px; }
+  .bar i { display: block; height: 100%; background: var(--brick); }
+  .cifras { display: grid; grid-template-columns: 1fr 1fr 1fr; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .cifras div { padding: 10px 8px; }
+  .cifras div + div { border-left: 1px solid var(--line); }
+  .foot { font-size: 12px; color: var(--muted); padding: 12px; }
+  .hide { display: none !important; }
+  @media (min-width: 800px) {
+    .sheet { align-items: center; justify-content: center; }
+    .sheet form, .sheet .panel { width: min(440px, 92vw); }
+  }
+</style>
+</head>
+<body>
+<header class="top">
+  <div>
+    <h1>Honorarios</h1>
+    <small>Pesos argentinos</small>
+  </div>
+  <span class="grow"></span>
+  <button class="iconbtn" id="btn-bajar" type="button" aria-label="Descargar copia">↓</button>
+  <button class="iconbtn" id="btn-abrir" type="button" aria-label="Abrir copia">↑</button>
+  <input id="archivo" type="file" accept="application/json,.json" class="hide" />
+</header>
+<div id="aviso" class="aviso hide"></div>
+<div id="app" class="main"></div>
+
+<script>
+const KEY = "honorarios.libro.v1";
+const ETAPAS = ["Anteproyecto", "Proyecto", "Documentación", "Dirección de obra", "Final de obra"];
+const $ = (id) => document.getElementById(id);
+let libro = load();
+let vista = "encargos";
+let pane = "lista";
+let busqueda = "";
+let dialogo = null;
+
+function load() {
+  try {
+    const data = JSON.parse(localStorage.getItem(KEY) || "");
+    if (!data || !Array.isArray(data.encargos)) throw 0;
+    return data;
+  } catch {
+    return { encargos: [], activoId: null };
+  }
+}
+function save() { localStorage.setItem(KEY, JSON.stringify(libro)); }
+function uid() { return crypto.randomUUID(); }
+function round2(n) { return Math.round(n * 100) / 100; }
+function parsePesos(input) {
+  let s = String(input).trim().replace(/\$/g, "").replace(/\s+/g, "").replace(/ars/gi, "");
+  if (!s) return null;
+  if (s.includes(",")) s = s.replace(/\./g, "").replace(",", ".");
+  else if (/^\d{1,3}(\.\d{3})+$/.test(s)) s = s.replace(/\./g, "");
+  if (!/^\d+(\.\d{1,2})?$/.test(s)) return null;
+  const n = Number(s);
+  return Number.isFinite(n) && n >= 0 ? round2(n) : null;
+}
+function formatPesos(n) {
+  const sign = n < 0 ? "−" : "";
+  const abs = Math.abs(n);
+  const formatted = new Intl.NumberFormat("es-AR", {
+    minimumFractionDigits: Number.isInteger(abs) ? 0 : 2,
+    maximumFractionDigits: 2,
+  }).format(abs);
+  return sign + "$ " + formatted;
+}
+function formatFecha(iso) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+  if (!m) return iso;
+  return new Intl.DateTimeFormat("es-AR", { day: "numeric", month: "short", year: "numeric" })
+    .format(new Date(+m[1], +m[2] - 1, +m[3]));
+}
+function formatMes(iso) {
+  const m = /^(\d{4})-(\d{2})/.exec(iso);
+  if (!m) return iso;
+  const label = new Intl.DateTimeFormat("es-AR", { month: "long", year: "numeric" })
+    .format(new Date(+m[1], +m[2] - 1, 1));
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}
+function hoy() {
+  const d = new Date();
+  const z = (n) => String(n).padStart(2, "0");
+  return d.getFullYear() + "-" + z(d.getMonth() + 1) + "-" + z(d.getDate());
+}
+function cobradoDe(e) { return round2(e.entregas.reduce((s, x) => s + x.monto, 0)); }
+function saldoDe(e) { return round2(e.honorarios - cobradoDe(e)); }
+function ordenar(entregas) {
+  return entregas.slice().sort((a, b) => a.fecha.localeCompare(b.fecha) || a.id.localeCompare(b.id));
+}
+function filas(e) {
+  let queda = e.honorarios;
+  return ordenar(e.entregas).map((row) => {
+    queda = round2(queda - row.monto);
+    return Object.assign({}, row, { queda });
+  });
+}
+function totales(list) {
+  const pactado = round2(list.reduce((s, e) => s + e.honorarios, 0));
+  const cobrado = round2(list.reduce((s, e) => s + cobradoDe(e), 0));
+  return { pactado, cobrado, saldo: round2(pactado - cobrado) };
+}
+function avance(e) {
+  if (e.honorarios <= 0) return 0;
+  return Math.min(100, Math.max(0, (cobradoDe(e) / e.honorarios) * 100));
+}
+function activo() { return libro.encargos.find((e) => e.id === libro.activoId) || null; }
+function el(tag, attrs, kids) {
+  const node = document.createElement(tag);
+  Object.entries(attrs || {}).forEach(([k, v]) => {
+    if (k === "class") node.className = v;
+    else if (k.startsWith("on") && typeof v === "function") node.addEventListener(k.slice(2), v);
+    else if (v === true) node.setAttribute(k, "");
+    else if (v !== false && v != null) node.setAttribute(k, v);
+  });
+  (kids || []).forEach((kid) => {
+    if (kid == null || kid === false) return;
+    node.append(kid.nodeType ? kid : document.createTextNode(String(kid)));
+  });
+  return node;
+}
+function aviso(texto) {
+  const box = $("aviso");
+  box.classList.remove("hide");
+  box.replaceChildren(document.createTextNode(texto + " "), el("button", { type: "button", onclick: () => box.classList.add("hide") }, ["Cerrar"]));
+}
+function render() {
+  const root = $("app");
+  root.replaceChildren();
+  if (!libro.encargos.length) {
+    root.append(el("div", { class: "empty" }, [
+      el("p", { class: "kicker" }, ["Libro de estudio"]),
+      el("h2", {}, ["Todavía no hay encargos."]),
+      el("p", {}, ["Cargá el cliente, la obra y el total de honorarios. Cada entrega se descuenta del saldo."]),
+      el("button", { class: "primary", type: "button", onclick: () => abrirEncargo() }, ["Cargar un encargo"]),
+    ]));
+    return;
+  }
+  const t = totales(libro.encargos);
+  const wrap = el("div");
+  wrap.append(el("div", { class: "resumen" }, [
+    el("span", { class: "kicker" }, [t.saldo < 0 ? "De más" : t.saldo === 0 ? "Saldado" : "Te deben"]),
+    el("b", { class: t.saldo > 0 ? "money debe" : "money" }, [formatPesos(t.saldo)]),
+  ]));
+  const tabs = el("div", { class: "tabs" });
+  tabs.append(el("button", { type: "button", "aria-pressed": vista === "encargos", onclick: () => { vista = "encargos"; render(); } }, ["Encargos"]));
+  tabs.append(el("button", { type: "button", "aria-pressed": vista === "fechas", onclick: () => { vista = "fechas"; render(); } }, ["Por fecha"]));
+  wrap.append(tabs);
+  if (vista === "fechas") wrap.append(cronologia());
+  else if (pane === "ficha" && activo()) wrap.append(ficha(activo()));
+  else wrap.append(lista());
+  root.append(wrap);
+  if (dialogo) root.append(dialogo);
+}
+function lista() {
+  const q = busqueda.trim().toLowerCase();
+  const visibles = libro.encargos.filter((e) => !q || e.cliente.toLowerCase().includes(q) || e.obra.toLowerCase().includes(q));
+  const box = el("div");
+  const search = el("div", { class: "pad" });
+  const input = el("input", { placeholder: "Buscar cliente u obra", "aria-label": "Buscar cliente u obra", value: busqueda });
+  input.addEventListener("input", () => {
+    busqueda = input.value;
+    const pos = input.selectionStart;
+    render();
+    const next = document.querySelector('input[aria-label="Buscar cliente u obra"]');
+    if (next) { next.focus(); next.setSelectionRange(pos, pos); }
+  });
+  search.append(input);
+  box.append(search);
+  const add = el("div", { class: "pad" }, [el("button", { class: "primary", type: "button", onclick: () => abrirEncargo() }, ["Nuevo encargo"])]);
+  box.append(add);
+  if (!visibles.length) box.append(el("p", { class: "pad" }, ["Ningún encargo coincide."]));
+  visibles.forEach((e) => {
+    const saldo = saldoDe(e);
+    box.append(el("button", { class: "card", type: "button", onclick: () => { libro.activoId = e.id; pane = "ficha"; save(); render(); } }, [
+      el("span", {}, [el("strong", {}, [e.cliente]), el("em", {}, [e.obra])]),
+      el("span", { class: "grow" }),
+      el("span", {}, [
+        el("strong", { class: "money" + (saldo > 0 ? " debe" : "") }, [formatPesos(saldo)]),
+        el("em", {}, [saldo > 0 ? "te deben" : saldo < 0 ? "de más" : "saldado"]),
+      ]),
+    ]));
+  });
+  box.append(el("p", { class: "foot" }, ["Guardado en este celular."]));
+  return box;
+}
+function ficha(e) {
+  const saldo = saldoDe(e);
+  const cobrado = cobradoDe(e);
+  const box = el("div", { class: "pad" });
+  box.append(el("button", { class: "ghost", type: "button", onclick: () => { pane = "lista"; render(); } }, ["← Encargos"]));
+  box.append(el("h2", { style: "font-family:Georgia,serif;font-weight:500;margin:12px 0 0" }, [e.cliente]));
+  box.append(el("p", { style: "margin:4px 0 12px;color:var(--muted)" }, [e.obra]));
+  const cifras = el("div", { class: "cifras" });
+  [["Pactado", e.honorarios], ["Cobrado", cobrado], ["Te deben", saldo]].forEach(([label, n]) => {
+    cifras.append(el("div", {}, [el("div", { class: "kicker" }, [label]), el("div", { class: "money" + (label === "Te deben" && n > 0 ? " debe" : "") }, [formatPesos(n)])]));
+  });
+  box.append(cifras);
+  const bar = el("div", { class: "bar" }, [el("i", { style: "width:" + avance(e) + "%" })]);
+  box.append(bar);
+  box.append(el("div", { class: "actions" }, [
+    el("button", { class: "primary", type: "button", onclick: () => abrirEntrega() }, ["Cargar entrega"]),
+    el("button", { class: "ghost", type: "button", onclick: () => abrirEncargo(e) }, ["Editar"]),
+  ]));
+  const rows = filas(e);
+  if (!rows.length) box.append(el("p", {}, ["Todavía no hay entregas. El saldo es el total pactado."]));
+  rows.forEach((row) => {
+    const line = el("div", { class: "row" }, [
+      el("div", {}, [el("strong", {}, [row.concepto || "Entrega"]), el("div", { class: "kicker" }, [formatFecha(row.fecha)])]),
+      el("div", { style: "text-align:right" }, [
+        el("div", { class: "money" }, [formatPesos(row.monto)]),
+        el("div", { class: "kicker" }, ["queda " + formatPesos(row.queda)]),
+      ]),
+    ]);
+    const tools = el("div", { class: "actions", style: "margin-top:8px" }, [
+      el("button", { type: "button", onclick: () => abrirEntrega(row) }, ["Editar"]),
+      el("button", { class: "danger", type: "button", onclick: () => confirmar("¿Borrar esta entrega?", "El monto vuelve a sumarse a lo que te deben.", "Borrar entrega", () => {
+        e.entregas = e.entregas.filter((x) => x.id !== row.id); save(); dialogo = null; render();
+      }) }, ["Borrar"]),
+    ]);
+    const block = el("div");
+    block.append(line, tools);
+    box.append(block);
+  });
+  box.append(el("p", { class: "pad" }, [
+    el("button", { class: "danger", type: "button", onclick: () => confirmar("¿Borrar este encargo?", "Se borran " + e.cliente + " y todas sus entregas.", "Borrar encargo", () => {
+      libro.encargos = libro.encargos.filter((x) => x.id !== e.id);
+      libro.activoId = libro.encargos[0] ? libro.encargos[0].id : null;
+      pane = "lista"; save(); dialogo = null; render();
+    }) }, ["Borrar encargo"]),
+  ]));
+  return box;
+}
+function cronologia() {
+  const grupos = new Map();
+  libro.encargos.forEach((e) => {
+    ordenar(e.entregas).forEach((row) => {
+      const mes = row.fecha.slice(0, 7);
+      if (!grupos.has(mes)) grupos.set(mes, []);
+      grupos.get(mes).push({ row, e });
+    });
+  });
+  const box = el("div", { class: "pad" });
+  if (!grupos.size) box.append(el("p", {}, ["Cuando cargues entregas, aparecen acá ordenadas por fecha."]));
+  [...grupos.keys()].sort().reverse().forEach((mes) => {
+    box.append(el("h3", { class: "kicker" }, [formatMes(mes + "-01")]));
+    grupos.get(mes).sort((a, b) => b.row.fecha.localeCompare(a.row.fecha)).forEach(({ row, e }) => {
+      box.append(el("button", { class: "card", type: "button", onclick: () => { libro.activoId = e.id; vista = "encargos"; pane = "ficha"; save(); render(); } }, [
+        el("span", {}, [el("strong", {}, [e.cliente]), el("em", {}, [formatFecha(row.fecha) + " · " + (row.concepto || "Entrega")])]),
+        el("span", { class: "grow" }),
+        el("strong", { class: "money" }, [formatPesos(row.monto)]),
+      ]));
+    });
+  });
+  return box;
+}
+function sheet(title, body, onOk, okLabel) {
+  const form = el("form", { class: "panel" });
+  form.append(el("h2", {}, [title]));
+  body.forEach((node) => form.append(node));
+  form.append(el("div", { class: "actions" }, [
+    el("button", { type: "button", onclick: () => { dialogo = null; render(); } }, ["Cancelar"]),
+    el("button", { class: "primary", type: "submit" }, [okLabel]),
+  ]));
+  form.addEventListener("submit", (event) => { event.preventDefault(); onOk(); });
+  dialogo = el("div", { class: "sheet" }, [form]);
+  render();
+  const first = form.querySelector("input,select");
+  if (first) first.focus();
+}
+function field(label, input) {
+  return el("label", { class: "field" }, [el("span", {}, [label]), input]);
+}
+function abrirEncargo(existente) {
+  const cliente = el("input", { required: true, value: existente ? existente.cliente : "", maxlength: "80" });
+  const obra = el("input", { required: true, value: existente ? existente.obra : "", maxlength: "80" });
+  const honorarios = el("input", { required: true, inputmode: "decimal", value: existente ? String(existente.honorarios).replace(".", ",") : "" });
+  sheet(existente ? "Editar encargo" : "Nuevo encargo", [
+    field("Cliente", cliente), field("Obra", obra), field("Honorarios, en pesos", honorarios),
+  ], () => {
+    const monto = parsePesos(honorarios.value);
+    if (!cliente.value.trim() || !obra.value.trim() || monto == null) { aviso("Completá cliente, obra y un monto válido."); return; }
+    if (existente) {
+      existente.cliente = cliente.value.trim();
+      existente.obra = obra.value.trim();
+      existente.honorarios = monto;
+    } else {
+      const id = uid();
+      libro.encargos.unshift({ id, cliente: cliente.value.trim(), obra: obra.value.trim(), honorarios: monto, entregas: [] });
+      libro.activoId = id;
+      pane = "ficha";
+    }
+    dialogo = null; save(); render();
+  }, "Guardar");
+}
+function abrirEntrega(existente) {
+  const e = activo();
+  if (!e) return;
+  const fecha = el("input", { type: "date", required: true, value: existente ? existente.fecha : hoy() });
+  const concepto = el("select");
+  ETAPAS.forEach((etapa) => concepto.append(el("option", { value: etapa, selected: existente && existente.concepto === etapa }, [etapa])));
+  concepto.append(el("option", { value: "Otra", selected: existente && !ETAPAS.includes(existente.concepto) }, ["Otra"]));
+  const otra = el("input", { value: existente && !ETAPAS.includes(existente.concepto) ? existente.concepto : "", placeholder: "Qué se entregó" });
+  const monto = el("input", { required: true, inputmode: "decimal", value: existente ? String(existente.monto).replace(".", ",") : "" });
+  function sync() { otra.parentElement.classList.toggle("hide", concepto.value !== "Otra"); }
+  concepto.addEventListener("change", sync);
+  const otraField = field("Concepto", otra);
+  sheet(existente ? "Editar entrega" : "Nueva entrega", [
+    field("Fecha", fecha), field("Etapa", concepto), otraField, field("Monto, en pesos", monto),
+  ], () => {
+    const valor = parsePesos(monto.value);
+    const nombre = concepto.value === "Otra" ? otra.value.trim() : concepto.value;
+    if (!fecha.value || !nombre || valor == null) { aviso("Completá fecha, concepto y un monto válido."); return; }
+    if (existente) { existente.fecha = fecha.value; existente.concepto = nombre; existente.monto = valor; }
+    else e.entregas.push({ id: uid(), fecha: fecha.value, concepto: nombre, monto: valor });
+    dialogo = null; save(); render();
+  }, "Guardar");
+  sync();
+}
+function confirmar(titulo, texto, ok, action) {
+  const form = el("form", { class: "panel" });
+  form.append(el("h2", {}, [titulo]), el("p", {}, [texto]));
+  form.append(el("div", { class: "actions" }, [
+    el("button", { type: "button", onclick: () => { dialogo = null; render(); } }, ["Cancelar"]),
+    el("button", { class: "danger", type: "submit" }, [ok]),
+  ]));
+  form.addEventListener("submit", (event) => { event.preventDefault(); action(); });
+  dialogo = el("div", { class: "sheet" }, [form]);
+  render();
+}
+$("btn-bajar").onclick = () => {
+  const blob = new Blob([JSON.stringify(libro, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = el("a", { href: url, download: "honorarios.json" });
+  a.click();
+  URL.revokeObjectURL(url);
+};
+$("btn-abrir").onclick = () => $("archivo").click();
+$("archivo").onchange = () => {
+  const file = $("archivo").files && $("archivo").files[0];
+  $("archivo").value = "";
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const data = JSON.parse(String(reader.result));
+      if (!data || !Array.isArray(data.encargos)) throw 0;
+      confirmar("¿Abrir esta copia?", "Reemplaza lo que está cargado ahora en este celular.", "Abrir copia", () => {
+        libro = data; pane = "lista"; dialogo = null; save(); render();
+      });
+    } catch { aviso("Ese archivo no es un libro de honorarios."); }
+  };
+  reader.readAsText(file);
+};
+render();
+</script>
+</body>
+</html>
